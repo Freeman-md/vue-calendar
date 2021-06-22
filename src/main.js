@@ -1,11 +1,12 @@
 import Vue from 'vue'
 import App from './App.vue'
 import vuetify from './plugins/vuetify'
-// import VueTextareaAutosize from 'vue-textarea-autosize'
+import VueTextareaAutosize from 'vue-textarea-autosize'
 import firebase from 'firebase/app'
 import 'firebase/firestore'
 
 Vue.config.productionTip = false
+Vue.use(VueTextareaAutosize)
 
 firebase.initializeApp({
     apiKey: "AIzaSyBb6X_ZFXnEejdoGwhtiWUROmy7tImnbfg",

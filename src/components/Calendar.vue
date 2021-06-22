@@ -5,6 +5,13 @@
         <v-toolbar
           flat
         >
+          <!-- <v-btn
+              color="primary"
+              class="mr-4"
+              @click="setToday"
+            >
+            New Event
+          </v-btn> -->
           <v-btn
             outlined
             class="mr-4"
@@ -30,6 +37,7 @@
             small
             color="grey darken-2"
             @click="next"
+            class="mr-4"
           >
             <v-icon small>
               mdi-chevron-right
@@ -101,20 +109,26 @@
               :color="selectedEvent.color"
               dark
             >
-              <v-btn icon>
-                <v-icon>mdi-pencil</v-icon>
+              <v-btn @click="deleteEvent(selectedEvent.id)" icon>
+                <v-icon>mdi-delete</v-icon>
               </v-btn>
               <v-toolbar-title v-html="selectedEvent.name"></v-toolbar-title>
               <v-spacer></v-spacer>
-              <v-btn icon>
-                <v-icon>mdi-heart</v-icon>
-              </v-btn>
-              <v-btn icon>
-                <v-icon>mdi-dots-vertical</v-icon>
-              </v-btn>
             </v-toolbar>
             <v-card-text>
-              <span v-html="selectedEvent.details"></span>
+              <form v-if="currentlyEditing !== selectedEvent.id">
+                {{ selectedEvent.details }}
+              </form>
+              <form v-else>
+                <textarea-autosize 
+                v-model="selectedEvent.details"
+                type="text"
+                style="width: 100%"
+                :min-height="100"
+                placeholder="Add Note"
+                >
+                </textarea-autosize>
+              </form>
             </v-card-text>
             <v-card-actions>
               <v-btn
@@ -122,7 +136,21 @@
                 color="secondary"
                 @click="selectedOpen = false"
               >
-                Cancel
+                Close
+              </v-btn>
+              <v-btn
+                text
+                v-if="currentlyEditing !== selectedEvent.id"
+                @click.prevent="editEvent(selectedEvent)"
+              >
+                Edit
+              </v-btn>
+              <v-btn
+                text
+                v-else
+                @click.prevent="updateEvent(selectedEvent)"
+              >
+                Save
               </v-btn>
             </v-card-actions>
           </v-card>
@@ -163,11 +191,77 @@ import { db } from '@/main'
     methods: {
       async getEvents() {
         let snapshot = await db.collection('calEvent').get()
-        // let events = []
+        let events = []
         snapshot.forEach(doc => {
-          console.log(doc.data())
+          let appData = doc.data()
+          appData.id = doc.id
+          events.push(appData)
+        }),
+        this.events = events
+      },
+      async updateEvent(ev) {
+        await db
+        .collection('calEvent')
+        .doc(this.currentlyEditing)
+        .update({
+          details: ev.details
         })
-      }
+        this.selectedOpen = false;
+        this.currentlyEditing = null;
+      },
+      async deleteEvent(ev) {
+        await db
+        .collection('calEvent')
+        .doc(ev)
+        .delete()
+        this.selectedOpen = false;
+        this.currentlyEditing = null;
+        this.getEvents()
+      },
+      viewDay ({ date }) {
+        this.focus = date
+        this.type = 'day'
+      },
+      getEventColor (event) {
+        return event.color
+      },
+      setToday () {
+        this.focus = ''
+      },
+      prev () {
+        this.$refs.calendar.prev()
+      },
+      next () {
+        this.$refs.calendar.next()
+      },
+      editEvent(ev) {
+        this.currentlyEditing = ev.id
+      },
+      showEvent ({ nativeEvent, event }) {
+        const open = () => {
+          this.selectedEvent = event
+          this.selectedElement = nativeEvent.target
+          setTimeout(() => {
+            this.selectedOpen = true
+          }, 10)
+        }
+
+        if (this.selectedOpen) {
+          this.selectedOpen = false
+          setTimeout(open, 10)
+        } else {
+          open()
+        }
+
+        nativeEvent.stopPropagation()
+      },
+      updateRange ({ start, end }) {
+        this.start = start
+        this.end = end
+      },
+      rnd (a, b) {
+        return Math.floor((b - a + 1) * Math.random()) + a
+      },
     }
   }
 </script>
